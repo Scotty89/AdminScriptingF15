@@ -19,7 +19,7 @@ echo "The blue element of the animals array has the value ${animals[rblue]}"
 echo "The array contains ${animals[@]}"
 
 #create a num variable yo use ad an index
-num=0
+read -p "Which element of the colours array would you like to use? " num
 
 #display some data elements from both arrays using the index num
 echo "The first colour in the array is ${colours[$num]} and it can"
