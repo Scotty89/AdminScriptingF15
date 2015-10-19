@@ -1,4 +1,4 @@
 #!/bin/bash
-# this script shows my ip address
+# this script display my external ip address
 
 curl icanhazip.com
