@@ -1,0 +1,32 @@
+colours = "red green blue"
+for currentcolour in $colours; do
+echo currentcolour is $currentcolour
+done
+
+for (count=0; $count <= 9; count++) ; do
+kdbbsnbsgn
+done
+
+while [ "$1" != ""]; do
+   case "$1" in
+    -h | --help )
+        do my help commands
+        ;;
+    -d | --debug )
+        debug=$2
+        test "$2" != "" || complain and exit
+        shift
+        ;;
+    -l | --long )
+        longlisting="true"
+        ;;
+    * )
+        if [ "$directorytoworkon" = "" ]; then
+            directorytoworkon=$1
+        else
+            echo "Usage: `basename $0` [-h] [-d|--debug debuglevel] [-l]"
+            exit 1
+        fi
+   esac
+   shift
+done
