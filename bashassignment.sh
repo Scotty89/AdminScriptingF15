@@ -5,7 +5,6 @@
 
 #test if bind exists
 #install bind if it does not exist
-
 if [ ! -d /etc/bind ]; then
 	echo "Bind is not installed on your system"
 	apt-get install bind9
@@ -15,9 +14,12 @@ bind='/etc/bind'
 
 #get a domain from user
 #complain and exit if domain exists
-
-
 read -p "Enter the domain name you would like to use: " fqdn
+
+if [ -z $fqdn ]; then
+	echo "You didn't enter a domain name."
+	exit 2
+fi
 
 if [ -e "db.$fqdn" ]; then
 	echo "This domain name already exists."
@@ -25,7 +27,6 @@ if [ -e "db.$fqdn" ]; then
 fi
 
 #create and edit a zone file for new domain
-
 soapattern="SOA"
 fqdninsert="@	IN	SOA	ns1.$fqdn.	hostmaster.$fqdn.	("
 
@@ -45,6 +46,11 @@ echo " Example 1989050701"
 
 read -p "Enter the date [YYYYMMDDVV]: " serial
 
+if [ -z $serial ]; then
+	echo "You did not enter a serial number."
+	exit 2
+fi
+
 sudo sed -i "/Serial/c \\\t\t\t$serial\t; Serial" db.$fqdn
 
 host="localhost."
@@ -62,11 +68,10 @@ sudo sed -i "15 a $www" db.$fqdn
 sudo sed -i "16 a $mail" db.$fqdn
 
 #create reverse zone files for www and mail
-
-reversewww="192.168.47.91"
-reversemail="192.168.59.5"
-pointerwww="1	IN	PTR	www.$fqdn."
-pointermail="1	IN	PTR	mail.$fqdn."
+reversewww="192.168.47"
+reversemail="192.168.59"
+pointerwww="91	IN	PTR	www.$fqdn."
+pointermail="5	IN	PTR	mail.$fqdn."
 
 sudo cp "$bind/db.$fqdn" "$bind/db.$reversewww"
 
@@ -81,10 +86,9 @@ sudo sed -i "15 d" db.$reversemail
 sudo sed -i "14 a $pointermail" db.$reversemail
 
 #add zones to named.conf.local
-
-originzone="zone "$fqdn" { type master; file "/etc/bind/db.$fqdn"; allow { 127.0.0.1; }; };"
-mailzone='zone "5.59.168.192.in-addr.arp" { type master; file "/etc/bind/db.192.168.59.5"; };'
-wwwzone='zone "91.47.168.192.in-addr.arpa" { type master; file "/etc/bind/db.192.168.47.91"; };'
+originzone="zone "$fqdn" {	type master;	file "/etc/bind/db.$fqdn";	allow { 127.0.0.1;	};	};"
+mailzone='zone "59.168.192.in-addr.arpa" {	type master;	file "/etc/bind/db.192.168.59";	};'
+wwwzone='zone "47.168.192.in-addr.arpa" {	type master;	file "/etc/bind/db.192.168.47";	};'
 
 sudo sed -i "8 a $originzone" named.conf.local
 
@@ -93,12 +97,42 @@ sudo sed -i "10 a $mailzone" named.conf.local
 sudo sed -i "12 a $wwwzone" named.conf.local
 
 #reload bind and test that nslookup can find the new names
+sudo rndc reload > /dev/null
 
-sudo rndc reload
+if [ $? -eq 0 ]; then
+	echo "Reloading DNS zones."
+else
+	echo "Reload of DNS zones failed."
+	exit 2
+fi
 
-nslookup ns1.$fqdn.
+#sleep to allow rndc reload to complete
+sleep 3
 
-nslookup 192.168.47.91
+#test that nslookup can find the new names
+nslookup ns1.$fqdn. localhost
 
-nslookup 192.168.59.5
+if [ $? -eq 0 ]; then
+	echo "Looking up ns1.$fqdn."
+else
+	echo "Look up failed."
+	exit 2
+fi
 
+nslookup 192.168.47.91 localhost
+
+if [ $? -eq 0 ]; then
+	echo "Looking up 192.168.47.91."
+else
+	echo "Look up failed."
+	exit 2
+fi
+
+nslookup 192.168.59.5 localhost
+
+if [ $? -eq 0 ]; then
+	echo "Looking up 192.168.59.5."
+else
+	echo "Look up failed."
+	exit 2
+fi
